@@ -9842,7 +9842,7 @@ int CLASS main (int argc, const char **argv)
   int timestamp_only=0, thumbnail_only=0, identify_only=0;
   int user_qual=-1, user_black=-1, user_sat=-1, user_flip=-1;
   int use_fuji_rotate=1, write_to_stdout=0, read_from_stdin=0;
-  const char *sp, *bpfile=0, *dark_frame=0, *write_ext;
+  const char *sp, *bpfile=0, *dark_frame=0, *write_ext, *outfile;
   char opm, opt, *ofname, *cp;
   struct utimbuf ut;
 #ifndef NO_LCMS
@@ -9875,6 +9875,7 @@ int CLASS main (int argc, const char **argv)
     puts(_("-r <r g b g> Set custom white balance"));
     puts(_("+M/-M     Use/don't use an embedded color matrix"));
     puts(_("-C <r b>  Correct chromatic aberration"));
+    puts(_("-O <file> Write output to this file"));
     puts(_("-P <file> Fix the dead pixels listed in this file"));
     puts(_("-K <file> Subtract dark frame (16-bit raw PGM)"));
     puts(_("-k <num>  Set the darkness level"));
@@ -9943,6 +9944,7 @@ int CLASS main (int argc, const char **argv)
 #endif
 	break;
       case 'P':  bpfile     = argv[arg++];  break;
+      case 'O':  outfile    = argv[arg++];  break;
       case 'K':  dark_frame = argv[arg++];  break;
       case 'z':  timestamp_only    = 1;  break;
       case 'e':  thumbnail_only    = 1;  break;
@@ -10221,11 +10223,14 @@ thumbnail:
       write_ext = ".tiff";
     else
       write_ext = ".pgm\0.ppm\0.ppm\0.pam" + colors*5-5;
-    ofname = (char *) malloc (strlen(ifname) + 64);
+    ofname = (char *) malloc (strlen(outfile ? outfile : ifname) + 64);
     merror (ofname, "main()");
     if (write_to_stdout)
       strcpy (ofname,_("standard output"));
     else {
+      if (outfile)
+        strcpy (ofname,outfile);
+      else {
       strcpy (ofname, ifname);
       if ((cp = strrchr (ofname, '.'))) *cp = 0;
       if (multi_out)
@@ -10234,6 +10239,7 @@ thumbnail:
       if (thumbnail_only)
 	strcat (ofname, ".thumb");
       strcat (ofname, write_ext);
+      }
       ofp = fopen (ofname, "wb");
       if (!ofp) {
 	status = 1;

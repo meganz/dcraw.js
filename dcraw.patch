@@ -59,6 +59,19 @@
  	  parse_external_jpeg();
 +#endif
  	data_offset = table[i].offset;
+@@ -8858,5 +8880,5 @@
+   cp = make + strlen(make);		/* Remove trailing spaces */
+-  while (*--cp == ' ') *cp = 0;
++  while (cp > make && *--cp == ' ') *cp = 0;
+   cp = model + strlen(model);
+-  while (*--cp == ' ') *cp = 0;
++  while (cp > model && *--cp == ' ') *cp = 0;
+   i = strlen(make);			/* Remove make from model */
+@@ -9820,3 +9842,3 @@
+     fprintf (stderr,_("Rotating image 45 degrees...\n"));
+-  fuji_width = (fuji_width - 1 + shrink) >> shrink;
++  fuji_width = (fuji_width - 1 + (1 << shrink) - 1) >> shrink;
+   step = sqrt(0.5);
 @@ -9952,2 +9974,6 @@
    th->rat[8] *= focal_len;
 +#ifdef SMALL
@@ -106,22 +119,43 @@
 +      printf (_("Timestamp: %10ld\n"), (long) timestamp);
 +#endif
        printf (_("Camera: %s %s\n"), make, model);
-@@ -10326,2 +10377,5 @@
+@@ -10326,5 +10377,11 @@
  	(threshold || aber[0] != 1 || aber[2] != 1)));
+-    iheight = (height + shrink) >> shrink;
+-    iwidth  = (width  + shrink) >> shrink;
 +#ifdef SMALL
-+    for (iwidth = height > width ? height : width, shrink = 8; shrink && ((iwidth >> shrink) < 1000); --shrink) {}
++    if (filters || colors == 1)	/* other loaders write image[] at full size */
++      for (iwidth = height > width ? height : width, shrink = 8; shrink && ((iwidth >> shrink) < 1000); --shrink) {}
 +#endif
-     iheight = (height + shrink) >> shrink;
-@@ -10329,2 +10383,4 @@
++    iheight = (height + (1 << shrink) - 1) >> shrink;
++    iwidth  = (width  + (1 << shrink) - 1) >> shrink;
      if (identify_only) {
 +      printf(_("shrink(%d): %d x %d -> %d x %d (f:%x,c:%d,o:%d)\n"),
 +             shrink, width, height, iwidth, iheight, filters, colors, flip);
        if (0) {
-@@ -10454,2 +10510,3 @@
+@@ -10335,7 +10392,7 @@
+ 	}
+-	iheight = (height + shrink) >> shrink;
+-	iwidth  = (width  + shrink) >> shrink;
++	iheight = (height + (1 << shrink) - 1) >> shrink;
++	iwidth  = (width  + (1 << shrink) - 1) >> shrink;
+ 	if (use_fuji_rotate) {
+ 	  if (fuji_width) {
+-	    fuji_width = (fuji_width - 1 + shrink) >> shrink;
++	    fuji_width = (fuji_width - 1 + (1 << shrink) - 1) >> shrink;
+ 	    iwidth = fuji_width / sqrt(0.5);
+@@ -10402,4 +10459,4 @@
+     }
+-    iheight = (height + shrink) >> shrink;
+-    iwidth  = (width  + shrink) >> shrink;
++    iheight = (height + (1 << shrink) - 1) >> shrink;
++    iwidth  = (width  + (1 << shrink) - 1) >> shrink;
+     if (raw_image) {
+@@ -10454,2 +10511,3 @@
  	image[i][1] = (image[i][1] + image[i][3]) >> 1;
 +#ifndef SMALL
      if (!is_foveon && colors == 3) median_filter();
-@@ -10461,2 +10518,3 @@
+@@ -10461,2 +10519,3 @@
  #endif
 +#endif
      convert_to_rgb();
